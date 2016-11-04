@@ -34,80 +34,53 @@
 #include <StopWatch.h>
 #include <Adafruit_DRV2605.h>
 #include <BLEPeripheral.h>
-
 #include <BLEUtil.h>
-
-Adafruit_DRV2605 drv;
-
-Adafruit_BNO055 bno = Adafruit_BNO055();
 
 #define OLED_MOSI   10 //FINAL: ??, PROTO: 10
 #define OLED_CLK   11  //FINAL: ??, PROTO: 11
 #define OLED_DC    12  //FINAL: ??, PROTO: 12
 #define OLED_CS    A0  //FINAL: ??, PROTO: A0
 #define OLED_RESET A1  //FINAL: ??, PROTO: A1
-
 #define B1Pin       5  //FINAL: ??, PROTO: 5
-#define B2Pin       6 //FINAL: ??, PROTO: 6
-#define B3Pin       9 //FINAL: ??, PROTO: 9
+#define B2Pin       6  //FINAL: ??, PROTO: 6
+#define B3Pin       9  //FINAL: ??, PROTO: 9
+#define BLE_REQ   A3   //FINAL: ??, PROTO: A3
+#define BLE_RDY   A4   //FINAL: ??, PROTO: A4
+#define BLE_RST   A5   //FINAL: ??, PROTO: A5
 
+Adafruit_SSD1306 display(OLED_MOSI, OLED_CLK, OLED_DC, OLED_RESET, OLED_CS);
+Adafruit_DRV2605 drv;
+Adafruit_BNO055 bno = Adafruit_BNO055();
 Adafruit_BMP280 bmp;
-
 StopWatch stopwatch;
-
-const unsigned int BATTERY_CAPACITY = 500;
-
 Chrono myChrono(Chrono::SECONDS);
-
 Button Button1(B1Pin, false, true, 20);  //Select
 Button Button2(B2Pin, false, true, 20); //Right
 Button Button3(B3Pin, false, true, 20); //Left
-
-Adafruit_SSD1306 display(OLED_MOSI, OLED_CLK, OLED_DC, OLED_RESET, OLED_CS);
-
-#define BLE_REQ   A3
-#define BLE_RDY   A4
-#define BLE_RST   A5
-
 BLEPeripheral blePeripheral = BLEPeripheral(BLE_REQ, BLE_RDY, BLE_RST);
 BLEBondStore bleBondStore;
-
 // remote services
 BLERemoteService ancsService = BLERemoteService("7905f431b5ce4e99a40f4b1e122d00d0");
-
 // remote characteristics
 BLERemoteCharacteristic ancsNotificationSourceCharacteristic = BLERemoteCharacteristic("9fbf120d630142d98c5825e699a21dbd", BLENotify);
-
 RTCZero rtc;
 
+const unsigned int BATTERY_CAPACITY = 500;
 int timer;
-
 float QFF = 1020.00;
-
 int chronoDeci;
 int chronoHour;
 int chronoSeconds;
 int chronoMinutes;
 int chronoCounting = 0;
-
 bool shouldBeSleeping = false;
 int inMenu = 0;
 int modeInMenu;
 int mode;
-
-int set_mode = 0;
-int minhour = 0;
-int time_set_hour;
-int time_set_min;
-
 //int timeout = 10000;
 int timeout = 10000000000;
 int first_millis;
-
 bool bleConnected = false;
-
-//int accelSens = 1; //1, 2, 4 or 12
-int accelSens = 2; //+-4G
 
 char* daysOfTheWeek[] = {"SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"};
 
