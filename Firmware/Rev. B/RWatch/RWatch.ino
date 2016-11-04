@@ -1,14 +1,36 @@
+/**
+  The MIT License (MIT)
+  Copyright (c) 2016 Rafael Riber
+  Permission is hereby granted, free of charge, to any person obtaining a copy
+  of this software and associated documentation files (the "Software"), to deal
+  in the Software without restriction, including without limitation the rights
+  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+  copies of the Software, and to permit persons to whom the Software is
+  furnished to do so, subject to the following conditions:
+  The above copyright notice and this permission notice shall be included in all
+  copies or substantial portions of the Software.
+  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+  SOFTWARE.
+**/
+
 #include <Wire.h>
-#include <LSM303.h>
+#include <Adafruit_Sensor.h>
+#include <Adafruit_BNO055.h>
+#include <utility/imumaths.h>
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
-#include <RTClib.h>
+#include <RTCZero.h>
 #include <Chrono.h>
 #include <LowPower.h>
 #include <Button.h>
 #include <StopWatch.h>
 
-#define OLED_MOSI   10 //FINAL: ??, PROTO: 10
+#define OLED_MOSI  10 //FINAL: ??, PROTO: 10
 #define OLED_CLK   11  //FINAL: ??, PROTO: 11
 #define OLED_DC    12  //FINAL: ??, PROTO: 12
 #define OLED_CS    A0  //FINAL: ??, PROTO: A0
@@ -18,23 +40,19 @@
 #define B2Pin       6 //FINAL: D10, PROTO: 10
 #define B3Pin       9 //FINAL: D9, PROTO: 11
 
-#define ClickPin    7 //FINAL: D7 //INT2 Double click
-
-LSM303 lsm;
+Adafruit_BNO055 bno = Adafruit_BNO055();
 
 StopWatch stopwatch;
-
 
 Chrono myChrono(Chrono::SECONDS);
 
 Button Button1(B1Pin, false, true, 20);  //Select
 Button Button2(B2Pin, false, true, 20); //Right
 Button Button3(B3Pin, false, true, 20); //Left
-Button Click(ClickPin, false, true, 0); //Double Click
 
 Adafruit_SSD1306 display(OLED_MOSI, OLED_CLK, OLED_DC, OLED_RESET, OLED_CS);
 
-RTC_DS3231 rtc;
+RTCZero rtc;
 
 int timer;
 
@@ -50,11 +68,6 @@ bool shouldBeSleeping = false;
 int inMenu = 0;
 int modeInMenu;
 int mode;
-
-int set_mode = 0;
-int minhour = 0;
-int time_set_hour;
-int time_set_min;
 
 int timeout = 10000;
 int first_millis;
@@ -285,90 +298,132 @@ void show_mode()
 
 void main_screen()
 {
-  DateTime now = rtc.now();
-
   display.clearDisplay();
 
   display.drawRect(0, 0, 128, 64, 1);
 
   display.drawFastHLine(0, 14, 128, 1);
-  //display.drawFastHLine(0, 48, 128, 1);
+  display.drawFastHLine(0, 48, 128, 1);
+
+  //BATT STAT
+  //  if (lipo.soc() == 100)
+  //  {
+  //    display.drawBitmap(5, 52, batt_icon_full16x8, 16, 8, 1);
+  //  }
+  //  if (lipo.soc() < 100 && lipo.soc() > 50)
+  //  {
+  //    display.drawBitmap(5, 52, batt_icon_high16x8, 16, 8, 1);
+  //  }
+  //  if (lipo.soc() < 50 && lipo.soc() > 30)
+  //  {
+  //    display.drawBitmap(5, 52, batt_icon_low16x8, 16, 8, 1);
+  //  }
+  //  if (lipo.soc() < 30)
+  //  {
+  //    display.drawBitmap(5, 52, batt_icon_empty16x8, 16, 8, 1);
+  //  }
+  //
+  //  display.setTextSize(1);
+  //  display.setTextColor(WHITE);
+  //  display.setCursor(25, 52);
+  //  display.print(lipo.soc());
+  //  display.print("%");
+  //
+  //  int pw = lipo.power();
+  //
+  //  if (pw > 0)
+  //  {
+  //    display.drawBitmap(50, 52, chg_icon8x8, 8, 8, 1);
+  //  }
 
   display.setTextSize(1);
   display.setTextColor(WHITE);
   display.setCursor(24, 4);
-  display.print(daysOfTheWeek[now.dayOfTheWeek()]);
+
+  int wd ; // WeekDay ( Sunday - 0,Monday- 1,.....)
+
+  int d = rtc.getDay();
+
+  int m = rtc.getMonth();
+
+  int y = 2000 + rtc.getYear();
+
+  wd = ((d += m < 3 ? y-- : y - 2, 23 * m / 9 + d + 4 + y / 4 - y / 100 + y / 400) % 7);
+
+
+  //Serial.print(wd);
+  display.print(daysOfTheWeek[wd]);
   display.print(" ");
 
-  if (now.day() < 10)
+  if (rtc.getDay() < 10)
   {
     display.print("0");
-    display.print(now.day());
+    display.print(rtc.getDay());
   }
-  if (now.day() >= 10)
+  if (rtc.getDay() >= 10)
   {
-    display.print(now.day());
+    display.print(rtc.getDay());
   }
   display.print('/');
-  if (now.month() < 10)
+  if (rtc.getMonth() < 10)
   {
     display.print("0");
-    display.print(now.month());
+    display.print(rtc.getMonth());
   }
-  if (now.month() >= 10)
+  if (rtc.getMonth() >= 10)
   {
-    display.print(now.month());
+    display.print(rtc.getMonth());
   }
   display.print('/');
-  display.print(now.year());
+  display.print(rtc.getYear());
 
   display.setTextSize(2);
   display.setTextColor(WHITE);
+  display.setCursor(15, 25);
 
-  //WITH LINE:
-  //display.setCursor(15, 25);
-
-  //WITHOUT LINE:
-  display.setCursor(15, 30);
-
-  if (now.hour() < 10)
+  if (rtc.getHours() < 10)
   {
     display.print('0');
-    display.print(now.hour());
+    display.print(rtc.getHours());
   }
   else
   {
-    display.print(now.hour());
+    display.print(rtc.getHours());
   }
   display.print(':');
-  if (now.minute() < 10)
+  if (rtc.getMinutes() < 10)
   {
     display.print('0');
-    display.print(now.minute());
+    display.print(rtc.getMinutes());
   }
   else
   {
-    display.print(now.minute());
+    display.print(rtc.getMinutes());
   }
   display.print(':');
-  if (now.second() < 10)
+  if (rtc.getSeconds() < 10)
   {
     display.print('0');
-    display.print(now.second());
+    display.print(rtc.getSeconds());
   }
   else
   {
-    display.print(now.second());
+    display.print(rtc.getSeconds());
   }
 
   display.setTextSize(1);
   display.setTextColor(WHITE);
   display.setCursor(100, 52);
 
+  //int temp = bmp.readTemperature();
+
+  //  display.print(temp);
+  //  display.print((char)247);
+  //  display.print("C");
+
   display.display();
   timer = millis();
 }
-
 void chrono()
 {
   first_millis = millis();
@@ -594,13 +649,62 @@ void compass()
   //Button2 = right
   //Button3 = left
 
-  lsm.read();
+  display.setTextSize(1);
+  display.setTextColor(WHITE);
+  display.setCursor(45, 4);
 
-  int heading = lsm.heading((LSM303::vector<int>) {
-    1, 0, 0
-  });
+  uint8_t system, gyro, accel, mag = 0;
+  bno.getCalibration(&system, &gyro, &accel, &mag);
+
+  display.print("Cal.: ");
+  display.print(mag);
+
+  imu::Vector<3> compass = bno.getVector(Adafruit_BNO055::VECTOR_MAGNETOMETER);
+
+  int heading = atan2(compass.y(), compass.x()) * (180 / PI); // angle in degrees
+
+  if (heading < 0)
+  {
+    heading = 360 + heading;
+  }
 
 
+  /*
+    CALIB ?
+    //  adafruit_bno055_offsets_t calibData;
+    //
+    //  //Calibration Results:
+    //  //Accelerometer: 65515 65520 13
+    //  //Gyro: 0 0 0
+    //  //Mag: 710 118 65414
+    //  //Accel Radius: 1000
+    //  //Mag Radius: 636
+    //
+    //  calibData.accel_offset_x = 65515;
+    //  calibData.accel_offset_y = 65520;
+    //  calibData.accel_offset_z = 13;
+    //
+    //  calibData.gyro_offset_x = 0;
+    //  calibData.gyro_offset_y = 0;
+    //  calibData.gyro_offset_z = 0;
+    //
+    //  calibData.mag_offset_x = 710;
+    //  calibData.mag_offset_y = 118;
+    //  calibData.mag_offset_z = 65414;
+    //
+    //  calibData.accel_radius = 1000;
+    //
+    //  calibData.mag_radius = 636;
+    //
+    //  if (!bno.isFullyCalibrated())
+    //  {
+    //    bno.setSensorOffsets(calibData);
+    //  }
+  */
+  if (heading < 0)
+  {
+    heading = 360 + heading;
+  }
 
   if (heading > 337  or heading <= 22)
   {
@@ -667,7 +771,7 @@ void compass()
   display.print((char)247);
 
   display.display();
-  delay(150);
+  delay(100);
 }
 
 void accel()
@@ -679,19 +783,21 @@ void accel()
   //Button2 = right
   //Button3 = left
 
-  lsm.readAcc();
-  float ax = ((lsm.a.x / 16) * accelSens * 0.01 * -1);
-  float ay = ((lsm.a.y / 16) * accelSens * 0.01 * -1);
-  float az = ((lsm.a.z / 16) * accelSens * 0.01 * -1);
-
-  float gx = ((lsm.a.x / 16) * accelSens * 0.01 * -1 / 10);
-  float gy = ((lsm.a.y / 16) * accelSens * 0.01 * -1 / 10);
-  float gz = ((lsm.a.z / 16) * accelSens * 0.01 * -1 / 10);
+  imu::Vector<3> linaccel = bno.getVector(Adafruit_BNO055::VECTOR_LINEARACCEL);
+  imu::Vector<3> gravity = bno.getVector(Adafruit_BNO055::VECTOR_GRAVITY);
 
   display.setTextSize(1);
   display.setTextColor(WHITE);
   display.setCursor(0, 0);
 
+  float ax = linaccel.x();
+  float ay = linaccel.y();
+  float az = linaccel.z();
+
+  float gx = gravity.x();
+  float gy = gravity.y();
+  float gz = gravity.z();
+  display.println("Linear acceleration:");
   display.print("X: ");
   display.print(ax);
   display.println(" m/s^2");
@@ -701,80 +807,65 @@ void accel()
   display.print("Z: ");
   display.print(az);
   display.println(" m/s^2");
-  display.println("");
-  display.println("");
+  display.println("Gravity:");
   display.print("X: ");
   display.print(gx);
-  display.println(" G");
+  display.println(" m/s^2");
   display.print("Y: ");
   display.print(gy);
-  display.println(" G");
+  display.println(" m/s^2");
   display.print("Z: ");
   display.print(gz);
-  display.println(" G");
+  display.println(" m/s^2");
   display.display();
   delay(75);
 }
 
 void setup()
 {
+  char s_month[5];
+  int tmonth, tday, tyear, thour, tminute, tsecond;
+  static const char month_names[] = "JanFebMarAprMayJunJulAugSepOctNovDec";
+
   Serial.begin(9600); //DEBUG
   Wire.begin();
   pinMode(B1Pin, INPUT_PULLUP);
   pinMode(B2Pin, INPUT_PULLUP);
   pinMode(B3Pin, INPUT_PULLUP);
-  pinMode(ClickPin, INPUT);
 
   timer = millis();
 
   rtc.begin();
 
+  // __DATE__ is a C++ preprocessor string with the current date in it.
+  // It will look something like 'Mar  13  2016'.
+  // So we need to pull those values out and convert the month string to a number.
+  sscanf(__DATE__, "%s %d %d", s_month, &tday, &tyear);
 
-  if (rtc.lostPower())
-  {
-    // The following line sets the RTC to the date & time this sketch was compiled
-    //rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
-    // This line sets the RTC with an explicit date & time:
-    //example: rtc.adjust(DateTime(YYYY, M/MM, D/DD, H/HH, M/MM, S/SS));
-    //rtc.adjust(DateTime(2016, 10, 17, 16, 15, 0));
-  }
+  // Similarly, __TIME__ will look something like '09:34:17' so get those numbers.
+  sscanf(__TIME__, "%d:%d:%d", &thour, &tminute, &tsecond);
 
-  lsm.init();
-  lsm.enableDefault();
-  lsm.writeAccReg(LSM303::CTRL_REG4_A, 24); //+- 4G
-  //INT1 Wake Interrupt
-  lsm.writeAccReg(LSM303::CTRL_REG2_A, 0x01); //High-pass filter enabled for AOI function on Interrupt 1
-  lsm.writeAccReg(LSM303::CTRL_REG3_A, 0x40); //Enable Interrupt
-  lsm.writeAccReg(LSM303::CTRL_REG6_A, 0x02); //Interrupt active low and Interrupt 1 on PAD2.
-  lsm.writeAccReg(LSM303::INT1_CFG_A, 0xA1); //AND combination of interrupt events.
-  lsm.writeAccReg(LSM303::INT1_THS_A, 0x0F); //Interrupt 1 threshold.
-  lsm.writeAccReg(LSM303::INT1_DURATION_A, 0x01); //Duration value.
+  // Find the position of this month's string inside month_names, do a little
+  // pointer subtraction arithmetic to get the offset, and divide the
+  // result by 3 since the month names are 3 chars long.
+  tmonth = (strstr(month_names, s_month) - month_names) / 3;
 
-  //INT1 + Click on INT2
-  //  lsm.writeAccReg(LSM303::CTRL_REG2_A, 0x05); //High-pass filter enabled for AOI function on Interrupt 1 and Click
-  //  lsm.writeAccReg(LSM303::CTRL_REG3_A, 0xC0); //Enable Interrupt1 and Click interrupt
-  //  lsm.writeAccReg(LSM303::CTRL_REG6_A, 0x82); //Interrupt active low and click on PAD (PIN) 2
-  //  //INT1 CFG
-  //  lsm.writeAccReg(LSM303::INT1_CFG_A, 0xD4); //AND/OR combination of interrupt events. 6-direction detection function enabled.
-  //  lsm.writeAccReg(LSM303::INT1_THS_A, 0x0F); //Interrupt 1 threshold.
-  //  lsm.writeAccReg(LSM303::INT1_DURATION_A, 0x01); //Duration value.
-  //  //CLICK CFG
-  //  lsm.writeAccReg(LSM303::CLICK_CFG_A, 0x30); //Double CLICK interrupt on Z axis
-  //  lsm.writeAccReg(LSM303::CLICK_THS_A, 0x0F); // Threshold
-  //  lsm.writeAccReg(LSM303::TIME_LIMIT_A, 0x46); //Time limit setting
-  //  lsm.writeAccReg(LSM303::TIME_LATENCY_A, 0x19); //Latency Setting
-  //  lsm.writeAccReg(LSM303::TIME_WINDOW_A, 0x1E); //Window
+  byte months = tmonth + 1;  // The RTC library expects months to be 1 - 12.
+  byte days = tday;
+  byte years = tyear - 2000; // The RTC library expects years to be from 2000.
+  byte hours = thour;
+  byte minutes = tminute;
+  byte seconds = tsecond + 6; //+6 to compensate for prog. time.
 
-  //PROTO: min: {  -621,    -148,   -206}    max: {  +283,   +729,   +892}
+  rtc.setTime(hours, minutes, seconds);
+  rtc.setDate(days, months, years);
 
-  //ASSEMBLY REV.A : min: {  -505,   -631,   -308}    max: {  +677,   +568,   +902}
+  rtc.setTime(hours, minutes, seconds);
+  rtc.setDate(days, months, years);
 
-  lsm.m_min = (LSM303::vector<int16_t>) {
-    -505, -631, -308
-  };
-  lsm.m_max = (LSM303::vector<int16_t>) {
-    +677, +568, +994
-  };
+  bno.begin();
+
+  bno.setExtCrystalUse(true);
 
   display.begin(SSD1306_SWITCHCAPVCC);
   display.clearDisplay();
