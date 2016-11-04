@@ -18,7 +18,7 @@
   SOFTWARE.
 **/
 
-//This is the firmware for Rev. A, which has errors on the PCB.
+//This is the firmware for Rev. A, which has errors on the PCB, but is here for documentation purposes.
 
 #include <SPI.h>
 #include <Wire.h>
@@ -44,7 +44,6 @@
 LSM303 lsm;
 
 StopWatch stopwatch;
-
 
 Chrono myChrono(Chrono::SECONDS);
 
