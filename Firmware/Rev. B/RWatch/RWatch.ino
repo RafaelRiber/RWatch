@@ -24,11 +24,16 @@
 #include <utility/imumaths.h>
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
+#include <Adafruit_BMP280.h>
 #include <RTCZero.h>
 #include <Chrono.h>
 #include <LowPower.h>
 #include <Button.h>
+#include <SparkFunBQ27441.h>
 #include <StopWatch.h>
+#include <Adafruit_DRV2605.h>
+
+Adafruit_DRV2605 drv;
 
 #define OLED_MOSI  10 //FINAL: ??, PROTO: 10
 #define OLED_CLK   11  //FINAL: ??, PROTO: 11
@@ -39,6 +44,8 @@
 #define B1Pin       5  //FINAL: D12, PROTO: 9
 #define B2Pin       6 //FINAL: D10, PROTO: 10
 #define B3Pin       9 //FINAL: D9, PROTO: 11
+
+Adafruit_BMP280 bmp;
 
 Adafruit_BNO055 bno = Adafruit_BNO055();
 
@@ -53,6 +60,8 @@ Button Button3(B3Pin, false, true, 20); //Left
 Adafruit_SSD1306 display(OLED_MOSI, OLED_CLK, OLED_DC, OLED_RESET, OLED_CS);
 
 RTCZero rtc;
+
+const unsigned int BATTERY_CAPACITY = 500;
 
 int timer;
 
@@ -69,7 +78,8 @@ int inMenu = 0;
 int modeInMenu;
 int mode;
 
-int timeout = 10000;
+//int timeout = 10000;
+int timeout = 10000000000;
 int first_millis;
 
 //int accelSens = 1; //1, 2, 4 or 12
@@ -189,14 +199,17 @@ void menu()
       display.setTextSize(1);
       display.setTextColor(BLACK, WHITE);
       display.setCursor(2, 2);
-      display.println(" Main screen");
+      display.println("  Main screen");
       display.setTextColor(WHITE);
       display.println(" Stopwatch");
+      display.println(" Altimeter");
       display.println(" Compass");
       display.println(" Accelerometer");
+      display.println(" Power");
       display.display();
       if (Button1.wasPressed())
       {
+        button_buzz();
         mode = 0;
       }
       break;
@@ -208,17 +221,20 @@ void menu()
       display.setCursor(2, 2);
       display.println(" Main screen");
       display.setTextColor(BLACK, WHITE);
-      display.println(" Stopwatch");
+      display.println("  Stopwatch");
       display.setTextColor(WHITE);
+      display.println(" Altimeter");
       display.println(" Compass");
       display.println(" Accelerometer");
+      display.println(" Power");
       display.display();
       if (Button1.wasPressed())
       {
+        button_buzz();
         mode = 1;
       }
       break;
-    case 2: //Compass
+    case 2://Alti
       display.clearDisplay();
       display.drawRect(0, 0, 128, 64, 1);
       display.setTextSize(1);
@@ -227,16 +243,19 @@ void menu()
       display.println(" Main screen");
       display.println(" Stopwatch");
       display.setTextColor(BLACK, WHITE);
-      display.println(" Compass");
+      display.println("  Altimeter");
       display.setTextColor(WHITE);
+      display.println(" Compass");
       display.println(" Accelerometer");
+      display.println(" Power");
       display.display();
       if (Button1.wasPressed())
       {
+        button_buzz();
         mode = 2;
       }
       break;
-    case 3: //Accelprint
+    case 3: //Compass
       display.clearDisplay();
       display.drawRect(0, 0, 128, 64, 1);
       display.setTextSize(1);
@@ -244,31 +263,76 @@ void menu()
       display.setCursor(2, 2);
       display.println(" Main screen");
       display.println(" Stopwatch");
-      display.println(" Compass");
+      display.println(" Altimeter");
       display.setTextColor(BLACK, WHITE);
-      display.println(" Accelerometer");
+      display.println("  Compass");
       display.setTextColor(WHITE);
+      display.println(" Accelerometer");
+      display.println(" Power");
       display.display();
       if (Button1.wasPressed())
       {
+        button_buzz();
         mode = 3;
+      }
+      break;
+    case 4: //Accelprint
+      display.clearDisplay();
+      display.drawRect(0, 0, 128, 64, 1);
+      display.setTextSize(1);
+      display.setTextColor(WHITE);
+      display.setCursor(2, 2);
+      display.println(" Main screen");
+      display.println(" Stopwatch");
+      display.println(" Altimeter");
+      display.println(" Compass");
+      display.setTextColor(BLACK, WHITE);
+      display.println("  Accelerometer");
+      display.setTextColor(WHITE);
+      display.println(" Power");
+      display.display();
+      if (Button1.wasPressed())
+      {
+        button_buzz();
+        mode = 4;
+      }
+      break;
+    case 5: //Power
+      display.clearDisplay();
+      display.drawRect(0, 0, 128, 64, 1);
+      display.setTextSize(1);
+      display.setTextColor(WHITE);
+      display.setCursor(2, 2);
+      display.println(" Main screen");
+      display.println(" Stopwatch");
+      display.println(" Altimeter");
+      display.println(" Compass");
+      display.println(" Accelerometer");
+      display.setTextColor(BLACK, WHITE);
+      display.println("  Power");
+      display.display();
+      if (Button1.wasPressed())
+      {
+        mode = 5;
       }
       break;
   }
 
   if (Button2.wasPressed())
   {
+    button_buzz();
     modeInMenu++;
   }
 
   if (Button3.wasPressed())
   {
+    button_buzz();
     modeInMenu = modeInMenu - 1;
   }
 
-  if (modeInMenu > 3)
+  if (modeInMenu > 5)
   {
-    modeInMenu = 3;
+    modeInMenu = 5;
   }
 
   if (modeInMenu < 0)
@@ -288,10 +352,16 @@ void show_mode()
       chrono();
       break;
     case 2:
-      compass();
+      altimeter();
       break;
     case 3:
+      compass();
+      break;
+    case 4:
       accel();
+      break;
+    case 5:
+      powerStats();
       break;
   }
 }
@@ -306,35 +376,35 @@ void main_screen()
   display.drawFastHLine(0, 48, 128, 1);
 
   //BATT STAT
-  //  if (lipo.soc() == 100)
-  //  {
-  //    display.drawBitmap(5, 52, batt_icon_full16x8, 16, 8, 1);
-  //  }
-  //  if (lipo.soc() < 100 && lipo.soc() > 50)
-  //  {
-  //    display.drawBitmap(5, 52, batt_icon_high16x8, 16, 8, 1);
-  //  }
-  //  if (lipo.soc() < 50 && lipo.soc() > 30)
-  //  {
-  //    display.drawBitmap(5, 52, batt_icon_low16x8, 16, 8, 1);
-  //  }
-  //  if (lipo.soc() < 30)
-  //  {
-  //    display.drawBitmap(5, 52, batt_icon_empty16x8, 16, 8, 1);
-  //  }
-  //
-  //  display.setTextSize(1);
-  //  display.setTextColor(WHITE);
-  //  display.setCursor(25, 52);
-  //  display.print(lipo.soc());
-  //  display.print("%");
-  //
-  //  int pw = lipo.power();
-  //
-  //  if (pw > 0)
-  //  {
-  //    display.drawBitmap(50, 52, chg_icon8x8, 8, 8, 1);
-  //  }
+    if (lipo.soc() == 100)
+    {
+      display.drawBitmap(5, 52, batt_icon_full16x8, 16, 8, 1);
+    }
+    if (lipo.soc() < 100 && lipo.soc() > 50)
+    {
+      display.drawBitmap(5, 52, batt_icon_high16x8, 16, 8, 1);
+    }
+    if (lipo.soc() < 50 && lipo.soc() > 30)
+    {
+      display.drawBitmap(5, 52, batt_icon_low16x8, 16, 8, 1);
+    }
+    if (lipo.soc() < 30)
+    {
+      display.drawBitmap(5, 52, batt_icon_empty16x8, 16, 8, 1);
+    }
+  
+    display.setTextSize(1);
+    display.setTextColor(WHITE);
+    display.setCursor(25, 52);
+    display.print(lipo.soc());
+    display.print("%");
+  
+    int pw = lipo.power();
+  
+    if (pw > 0)
+    {
+      display.drawBitmap(50, 52, chg_icon8x8, 8, 8, 1);
+    }
 
   display.setTextSize(1);
   display.setTextColor(WHITE);
@@ -415,11 +485,11 @@ void main_screen()
   display.setTextColor(WHITE);
   display.setCursor(100, 52);
 
-  //int temp = bmp.readTemperature();
+  int temp = bmp.readTemperature();
 
-  //  display.print(temp);
-  //  display.print((char)247);
-  //  display.print("C");
+  display.print(temp);
+  display.print((char)247);
+  display.print("C");
 
   display.display();
   timer = millis();
@@ -639,6 +709,55 @@ void chrono()
   display.display();
 }
 
+void altimeter()
+{
+
+  first_millis = millis();
+  display.clearDisplay();
+  display.drawRect(0, 0, 128, 64, 1);
+  display.drawFastHLine(0, 14, 128, 1);
+  display.drawFastHLine(0, 48, 128, 1);
+  //Button1 = select
+  //Button2 = right
+  //Button3 = left
+
+  display.setTextSize(1);
+  display.setTextColor(WHITE);
+  display.setCursor(25, 4);
+  display.print("QFF : ");
+  display.print(QFF);
+
+  display.setTextSize(2);
+  display.setTextColor(WHITE);
+  display.setCursor(40, 25);
+  int alt = bmp.readAltitude(QFF);
+  display.print(alt);
+  display.print("m");
+
+  display.setTextSize(1);
+  display.setTextColor(WHITE);
+  display.setCursor(34, 52);
+  display.print("Temp: ");
+  int temp = bmp.readTemperature();
+  display.print(temp);
+  display.print((char)247);
+  display.print("C");
+
+  display.display();
+
+  if (Button2.wasPressed())
+  {
+    button_buzz();
+    QFF = QFF + 0.20;
+  }
+
+  if (Button3.wasPressed())
+  {
+    button_buzz();
+    QFF = QFF - 0.20;
+  }
+}
+
 
 void compass()
 {
@@ -821,6 +940,49 @@ void accel()
   delay(75);
 }
 
+void button_buzz()
+{
+  drv.setWaveform(0, 1);  // strong click 100%, see datasheet part 11.2
+  drv.setWaveform(1, 0);  // end of waveforms
+  drv.go();
+}
+
+void powerStats()
+{
+  display.clearDisplay();
+  display.setTextSize(1);
+  display.setTextColor(WHITE);
+  display.setCursor(0, 0);
+  // Now print out those values:
+  display.print("SOC: ");
+  display.print(lipo.soc());
+  display.println("%");
+
+  display.print("Voltage: ");
+  display.print(lipo.voltage());
+  display.println(" mV");
+
+  display.print("Current: ");
+  display.print(lipo.current(AVG));
+  display.println(" mA");
+
+  display.print("Capacity: ");
+  display.print(lipo.capacity(REMAIN));
+  display.print((char)47);
+  display.print(lipo.capacity(FULL));
+  display.println(" mAh");
+
+  display.print("Power: ");
+  display.print(lipo.power());
+  display.println(" mW");
+
+  display.print("Health: ");
+  display.print(lipo.soh());
+  display.print("%");
+  display.display();
+}
+
+
 void setup()
 {
   char s_month[5];
@@ -863,9 +1025,18 @@ void setup()
   rtc.setTime(hours, minutes, seconds);
   rtc.setDate(days, months, years);
 
-  bno.begin();
+  bmp.begin();
 
+  bno.begin();
   bno.setExtCrystalUse(true);
+
+    //BATT SETUP
+  lipo.begin();
+  lipo.setCapacity(BATTERY_CAPACITY);
+
+  drv.begin();
+  drv.setMode(DRV2605_MODE_INTTRIG);
+  drv.selectLibrary(1);
 
   display.begin(SSD1306_SWITCHCAPVCC);
   display.clearDisplay();
@@ -924,6 +1095,7 @@ void loop()
   if (Button1.wasPressed())
   {
     inMenu++;
+    button_buzz();
     if (inMenu > 1)
     {
       inMenu = 0;
