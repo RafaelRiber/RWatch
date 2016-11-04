@@ -18,6 +18,7 @@
   SOFTWARE.
 **/
 
+#include <SPI.h>
 #include <Wire.h>
 #include <Adafruit_Sensor.h>
 #include <Adafruit_BNO055.h>
@@ -32,24 +33,29 @@
 #include <SparkFunBQ27441.h>
 #include <StopWatch.h>
 #include <Adafruit_DRV2605.h>
+#include <BLEPeripheral.h>
+
+#include <BLEUtil.h>
 
 Adafruit_DRV2605 drv;
 
-#define OLED_MOSI  10 //FINAL: ??, PROTO: 10
+Adafruit_BNO055 bno = Adafruit_BNO055();
+
+#define OLED_MOSI   10 //FINAL: ??, PROTO: 10
 #define OLED_CLK   11  //FINAL: ??, PROTO: 11
 #define OLED_DC    12  //FINAL: ??, PROTO: 12
 #define OLED_CS    A0  //FINAL: ??, PROTO: A0
 #define OLED_RESET A1  //FINAL: ??, PROTO: A1
 
-#define B1Pin       5  //FINAL: D12, PROTO: 9
-#define B2Pin       6 //FINAL: D10, PROTO: 10
-#define B3Pin       9 //FINAL: D9, PROTO: 11
+#define B1Pin       5  //FINAL: ??, PROTO: 5
+#define B2Pin       6 //FINAL: ??, PROTO: 6
+#define B3Pin       9 //FINAL: ??, PROTO: 9
 
 Adafruit_BMP280 bmp;
 
-Adafruit_BNO055 bno = Adafruit_BNO055();
-
 StopWatch stopwatch;
+
+const unsigned int BATTERY_CAPACITY = 500;
 
 Chrono myChrono(Chrono::SECONDS);
 
@@ -59,9 +65,20 @@ Button Button3(B3Pin, false, true, 20); //Left
 
 Adafruit_SSD1306 display(OLED_MOSI, OLED_CLK, OLED_DC, OLED_RESET, OLED_CS);
 
-RTCZero rtc;
+#define BLE_REQ   A3
+#define BLE_RDY   A4
+#define BLE_RST   A5
 
-const unsigned int BATTERY_CAPACITY = 500;
+BLEPeripheral blePeripheral = BLEPeripheral(BLE_REQ, BLE_RDY, BLE_RST);
+BLEBondStore bleBondStore;
+
+// remote services
+BLERemoteService ancsService = BLERemoteService("7905f431b5ce4e99a40f4b1e122d00d0");
+
+// remote characteristics
+BLERemoteCharacteristic ancsNotificationSourceCharacteristic = BLERemoteCharacteristic("9fbf120d630142d98c5825e699a21dbd", BLENotify);
+
+RTCZero rtc;
 
 int timer;
 
@@ -78,18 +95,21 @@ int inMenu = 0;
 int modeInMenu;
 int mode;
 
+int set_mode = 0;
+int minhour = 0;
+int time_set_hour;
+int time_set_min;
+
 //int timeout = 10000;
 int timeout = 10000000000;
 int first_millis;
 
+bool bleConnected = false;
+
 //int accelSens = 1; //1, 2, 4 or 12
 int accelSens = 2; //+-4G
 
-//FR:
-//char daysOfTheWeek[7][12] = {"DIM", "LUN", "MAR", "MER", "JEU", "VEN", "SAM"};
-//ENG:
-char daysOfTheWeek[7][12] = {"SUN", "MON", "TUE", "WEN", "THU", "FRI", "SAT"};
-
+char* daysOfTheWeek[] = {"SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"};
 
 const unsigned char RWatch_logo[] PROGMEM = {
   0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -176,6 +196,10 @@ const unsigned char batt_icon_full16x8[] PROGMEM = {
 
 const unsigned char chg_icon8x8[] PROGMEM = {
   0x00, 0x08, 0x10, 0x30, 0x7e, 0x0c, 0x08, 0x10
+};
+
+const unsigned char BLE8x8[] PROGMEM = {
+  0x10, 0x18, 0x54, 0x38, 0x54, 0x18, 0x10, 0x00,
 };
 
 void interr1()
@@ -376,35 +400,35 @@ void main_screen()
   display.drawFastHLine(0, 48, 128, 1);
 
   //BATT STAT
-    if (lipo.soc() == 100)
-    {
-      display.drawBitmap(5, 52, batt_icon_full16x8, 16, 8, 1);
-    }
-    if (lipo.soc() < 100 && lipo.soc() > 50)
-    {
-      display.drawBitmap(5, 52, batt_icon_high16x8, 16, 8, 1);
-    }
-    if (lipo.soc() < 50 && lipo.soc() > 30)
-    {
-      display.drawBitmap(5, 52, batt_icon_low16x8, 16, 8, 1);
-    }
-    if (lipo.soc() < 30)
-    {
-      display.drawBitmap(5, 52, batt_icon_empty16x8, 16, 8, 1);
-    }
-  
-    display.setTextSize(1);
-    display.setTextColor(WHITE);
-    display.setCursor(25, 52);
-    display.print(lipo.soc());
-    display.print("%");
-  
-    int pw = lipo.power();
-  
-    if (pw > 0)
-    {
-      display.drawBitmap(50, 52, chg_icon8x8, 8, 8, 1);
-    }
+  if (lipo.soc() == 100)
+  {
+    display.drawBitmap(5, 52, batt_icon_full16x8, 16, 8, 1);
+  }
+  if (lipo.soc() < 100 && lipo.soc() > 50)
+  {
+    display.drawBitmap(5, 52, batt_icon_high16x8, 16, 8, 1);
+  }
+  if (lipo.soc() < 50 && lipo.soc() > 30)
+  {
+    display.drawBitmap(5, 52, batt_icon_low16x8, 16, 8, 1);
+  }
+  if (lipo.soc() < 30)
+  {
+    display.drawBitmap(5, 52, batt_icon_empty16x8, 16, 8, 1);
+  }
+
+  display.setTextSize(1);
+  display.setTextColor(WHITE);
+  display.setCursor(25, 52);
+  display.print(lipo.soc());
+  display.print("%");
+
+  int pw = lipo.power();
+
+  if (pw > 0)
+  {
+    display.drawBitmap(50, 52, chg_icon8x8, 8, 8, 1);
+  }
 
   display.setTextSize(1);
   display.setTextColor(WHITE);
@@ -484,16 +508,20 @@ void main_screen()
   display.setTextSize(1);
   display.setTextColor(WHITE);
   display.setCursor(100, 52);
-
   int temp = bmp.readTemperature();
-
   display.print(temp);
   display.print((char)247);
   display.print("C");
 
+  if (bleConnected == true)
+  {
+    display.drawBitmap(90, 52, BLE8x8, 8, 8, 1);
+  }
+
   display.display();
   timer = millis();
 }
+
 void chrono()
 {
   first_millis = millis();
@@ -513,6 +541,7 @@ void chrono()
       display.setTextSize(2);
       display.setTextColor(WHITE);
       display.setCursor(15, 25);
+      //display.print(stopwatch.elapsed());
       if (stopwatch.elapsed() / 1000 < 60)
       {
         if ((stopwatch.elapsed() / 100000) < 10)
@@ -573,6 +602,7 @@ void chrono()
         display.setTextSize(2);
         display.setTextColor(WHITE);
         display.setCursor(15, 25);
+        //display.print(stopwatch.elapsed());
         if (stopwatch.elapsed() / 1000 < 60)
         {
           if ((stopwatch.elapsed() / 100000) < 10)
@@ -689,6 +719,7 @@ void chrono()
   }
   if (Button2.wasPressed())
   {
+    button_buzz();
     if (chronoCounting <= 1)
     {
       chronoCounting++;
@@ -702,6 +733,7 @@ void chrono()
 
   if (Button3.wasPressed())
   {
+    button_buzz();
     stopwatch.reset();
     chronoCounting = 0;
   }
@@ -757,7 +789,6 @@ void altimeter()
     QFF = QFF - 0.20;
   }
 }
-
 
 void compass()
 {
@@ -982,6 +1013,83 @@ void powerStats()
   display.display();
 }
 
+void blePeripheralConnectHandler(BLECentral& central) {
+}
+
+void blePeripheralDisconnectHandler(BLECentral& central) {
+  bleConnected = false;
+}
+
+void blePeripheralBondedHandler(BLECentral& central) {
+  // central bonded event handler
+  bleConnected = true;
+
+  if (ancsNotificationSourceCharacteristic.canSubscribe()) {
+    ancsNotificationSourceCharacteristic.subscribe();
+  }
+}
+
+void blePeripheralRemoteServicesDiscoveredHandler(BLECentral& central) {
+  // central remote services discovered event handler
+
+  if (ancsNotificationSourceCharacteristic.canSubscribe()) {
+    ancsNotificationSourceCharacteristic.subscribe();
+  }
+}
+
+enum AncsNotificationEventId {
+  AncsNotificationEventIdAdded    = 0,
+  AncsNotificationEventIdModified = 1,
+  AncsNotificationEventIdRemoved  = 2
+};
+
+enum AncsNotificationEventFlags {
+  AncsNotificationEventFlagsSilent         = 1,
+  AncsNotificationEventFlagsImportant      = 2,
+  AncsNotificationEventFlagsPositiveAction = 4,
+  AncsNotificationEventFlagsNegativeAction = 8
+};
+
+enum AncsNotificationCategoryId {
+  AncsNotificationCategoryIdOther              = 0,
+  AncsNotificationCategoryIdIncomingCall       = 1,
+  AncsNotificationCategoryIdMissedCall         = 2,
+  AncsNotificationCategoryIdVoicemail          = 3,
+  AncsNotificationCategoryIdSocial             = 4,
+  AncsNotificationCategoryIdSchedule           = 5,
+  AncsNotificationCategoryIdEmail              = 6,
+  AncsNotificationCategoryIdNews               = 7,
+  AncsNotificationCategoryIdHealthAndFitness   = 8,
+  AncsNotificationCategoryIdBusinessAndFinance = 9,
+  AncsNotificationCategoryIdLocation           = 10,
+  AncsNotificationCategoryIdEntertainment      = 11
+};
+
+struct AncsNotification {
+  unsigned char eventId;
+  unsigned char eventFlags;
+  unsigned char catergoryId;
+  unsigned char catergoryCount;
+  unsigned long notificationUid;
+};
+
+void ancsNotificationSourceCharacteristicValueUpdated(BLECentral& central, BLERemoteCharacteristic& characteristic) {
+  Serial.println(F("ANCS Notification Source Value Updated:"));
+  struct AncsNotification notification;
+
+  memcpy(&notification, characteristic.value(), sizeof(notification));
+
+  Serial.print("\tEvent ID: ");
+  Serial.println(notification.eventId);
+  Serial.print("\tEvent Flags: 0x");
+  Serial.println(notification.eventFlags, HEX);
+  Serial.print("\tCategory ID: ");
+  Serial.println(notification.catergoryId);
+  Serial.print("\tCategory Count: ");
+  Serial.println(notification.catergoryCount);
+  Serial.print("\tNotification UID: ");
+  Serial.println(notification.notificationUid);
+}
 
 void setup()
 {
@@ -1030,13 +1138,39 @@ void setup()
   bno.begin();
   bno.setExtCrystalUse(true);
 
-    //BATT SETUP
+  //BATT SETUP
   lipo.begin();
   lipo.setCapacity(BATTERY_CAPACITY);
 
   drv.begin();
   drv.setMode(DRV2605_MODE_INTTRIG);
   drv.selectLibrary(1);
+
+  bleBondStore.clearData();
+
+  blePeripheral.setBondStore(bleBondStore);
+
+  blePeripheral.setServiceSolicitationUuid(ancsService.uuid());
+  blePeripheral.setLocalName("ANCS");
+
+  // set device name and appearance
+  blePeripheral.setDeviceName("RWatch");
+  blePeripheral.setAppearance(0x0080);
+
+  blePeripheral.addRemoteAttribute(ancsService);
+  blePeripheral.addRemoteAttribute(ancsNotificationSourceCharacteristic);
+
+  // assign event handlers for connected, disconnected to peripheral
+  blePeripheral.setEventHandler(BLEConnected, blePeripheralConnectHandler);
+  blePeripheral.setEventHandler(BLEDisconnected, blePeripheralDisconnectHandler);
+  blePeripheral.setEventHandler(BLEBonded, blePeripheralBondedHandler);
+  blePeripheral.setEventHandler(BLERemoteServicesDiscovered, blePeripheralRemoteServicesDiscoveredHandler);
+
+  // assign event handlers for characteristic
+  ancsNotificationSourceCharacteristic.setEventHandler(BLEValueUpdated, ancsNotificationSourceCharacteristicValueUpdated);
+
+  // begin initialization
+  blePeripheral.begin();
 
   display.begin(SSD1306_SWITCHCAPVCC);
   display.clearDisplay();
@@ -1048,11 +1182,14 @@ void setup()
 
 void loop()
 {
+  if (rtc.getSeconds() % 2 == 0)
+  {
+    blePeripheral.poll();
+  }
   shouldBeSleeping = false;
   Button1.read();
   Button2.read();
   Button3.read();
-  //Click.read();
 
   if (Button1.pressedFor(1500) or timer - first_millis >= timeout)
   {
@@ -1066,19 +1203,17 @@ void loop()
     case 1:
       display.clearDisplay();
       display.display();
-      delay(250);
-      //attachInterrupt(6, interr1, LOW);
+      //attachInterrupt(A2, interr1, HIGH);
       attachInterrupt(B1Pin, interr2, LOW);
       LowPower.standby();
       display.drawBitmap(0, 0, RWatch_logo, 128, 64, 1);
       display.display();
       detachInterrupt(B1Pin);
-      //detachInterrupt(6);
-      inMenu = 0;
-      modeInMenu = 0;
-      mode = 0;
+      //detachInterrupt(A2);
       first_millis = millis();
-      delay(500);
+      inMenu = 0;
+      mode = 0;
+      modeInMenu = 0;
       shouldBeSleeping = false;
   }
 
