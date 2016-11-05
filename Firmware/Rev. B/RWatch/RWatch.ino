@@ -175,6 +175,11 @@ const unsigned char BLE8x8[] PROGMEM = {
   0x10, 0x18, 0x54, 0x38, 0x54, 0x18, 0x10, 0x00,
 };
 
+const unsigned char notif16x16[] PROGMEM = {
+  0x01, 0x80, 0x03, 0xc0, 0x0c, 0x30, 0x10, 0x08, 0x00, 0x00, 0x20, 0x04, 0x20, 0x04, 0x20, 0x04,
+  0x20, 0x04, 0x20, 0x04, 0x40, 0x02, 0x80, 0x01, 0x80, 0x01, 0xff, 0xff, 0x02, 0x40, 0x01, 0x80,
+};
+
 void interr1()
 {}
 
@@ -359,6 +364,42 @@ void show_mode()
       break;
     case 5:
       powerStats();
+      break;
+    case 6:
+      notifOther();
+      break;
+    case 7:
+      notifIncomingCall();
+      break;
+    case 8:
+      notifMissedCall();
+      break;
+    case 9:
+      notifVoiceMail();
+      break;
+    case 10:
+      notifSocial();
+      break;
+    case 11:
+      notifSchedule();
+      break;
+    case 12:
+      notifEmail();
+      break;
+    case 13:
+      notifNews();
+      break;
+    case 14:
+      notifHealth();
+      break;
+    case 15:
+      notifBuisness();
+      break;
+    case 16:
+      notifLocation();
+      break;
+    case 17:
+      notifEntertainment();
       break;
   }
 }
@@ -983,6 +1024,200 @@ void powerStats()
   display.print("Health: ");
   display.print(lipo.soh());
   display.print("%");
+
+  display.display();
+}
+
+void notifOther()
+{
+  display.clearDisplay();
+  display.drawRect(0, 0, 128, 64, 1);
+  display.drawBitmap(5, 56, notif16x16, 16, 16, 1);
+  display.setTextSize(1);
+  display.setTextColor(WHITE);
+  display.setCursor(20, 22);
+  display.print("You have a new\n   notification");
+  if (Button3.wasPressed())
+  {
+    mode = 0;
+    inMenu = 0;
+  }
+  display.display();
+}
+
+void notifIncomingCall()
+{
+  display.clearDisplay();
+  display.drawRect(0, 0, 128, 64, 1);
+  display.drawBitmap(5, 56, notif16x16, 16, 16, 1);
+  display.setTextSize(1);
+  display.setTextColor(WHITE);
+  display.setCursor(30, 22);
+  display.print("You have an\n    incoming call");
+  if (Button3.wasPressed())
+  {
+    mode = 0;
+    inMenu = 0;
+  }
+  display.display();
+}
+void notifMissedCall()
+{
+  display.clearDisplay();
+  display.drawRect(0, 0, 128, 64, 1);
+  display.setTextSize(1);
+  display.setTextColor(WHITE);
+  display.setCursor(20, 22);
+  display.print("You have a new\n     missed call");
+  if (Button3.wasPressed())
+  {
+    mode = 0;
+    inMenu = 0;
+  }
+  display.display();
+}
+void notifVoiceMail()
+{
+  display.clearDisplay();
+  display.drawRect(0, 0, 128, 64, 1);
+  display.drawBitmap(5, 56, notif16x16, 16, 16, 1);
+  display.setTextSize(1);
+  display.setTextColor(WHITE);
+  display.setCursor(20, 22);
+  display.print("You have a new\n      voicemail");
+  if (Button3.wasPressed())
+  {
+    mode = 0;
+    inMenu = 0;
+  }
+  display.display();
+}
+void notifSocial()
+{
+  display.clearDisplay();
+  display.drawRect(0, 0, 128, 64, 1);
+  display.drawBitmap(5, 56, notif16x16, 16, 16, 1);
+  display.setTextSize(1);
+  display.setTextColor(WHITE);
+  display.setCursor(15, 22);
+  display.print("You have a new\n social notification");
+  if (Button3.wasPressed())
+  {
+    mode = 0;
+    inMenu = 0;
+  }
+  display.display();
+}
+void notifSchedule()
+{
+  display.clearDisplay();
+  display.drawRect(0, 0, 128, 64, 1);
+  display.drawBitmap(5, 56, notif16x16, 16, 16, 1);
+  display.setTextSize(1);
+  display.setTextColor(WHITE);
+  display.setCursor(15, 22);
+  display.print("You have a new\nschedule notification");
+  if (Button3.wasPressed())
+  {
+    mode = 0;
+    inMenu = 0;
+  }
+  display.display();
+}
+void notifEmail()
+{
+  display.clearDisplay();
+  display.drawRect(0, 0, 128, 64, 1);
+  display.drawBitmap(5, 56, notif16x16, 16, 16, 1);
+  display.setTextSize(1);
+  display.setTextColor(WHITE);
+  display.setCursor(20, 22);
+  display.print("You have a new\n        Email");
+  if (Button3.wasPressed())
+  {
+    mode = 0;
+    inMenu = 0;
+  }
+  display.display();
+}
+void notifNews()
+{
+  display.clearDisplay();
+  display.drawRect(0, 0, 128, 64, 1);
+  display.drawBitmap(5, 56, notif16x16, 16, 16, 1);
+  display.setTextSize(1);
+  display.setTextColor(WHITE);
+  display.setCursor(20, 22);
+  display.print("You have a new\n  news notification");
+  if (Button3.wasPressed())
+  {
+    mode = 0;
+    inMenu = 0;
+  }
+  display.display();
+}
+void notifHealth()
+{
+  display.clearDisplay();
+  display.drawRect(0, 0, 128, 64, 1);
+  display.drawBitmap(5, 56, notif16x16, 16, 16, 1);
+  display.setTextSize(1);
+  display.setTextColor(WHITE);
+  display.setCursor(20, 22);
+  display.print("You have a new\n health notification");
+  if (Button3.wasPressed())
+  {
+    mode = 0;
+    inMenu = 0;
+  }
+  display.display();
+}
+void notifBuisness()
+{
+  display.clearDisplay();
+  display.drawRect(0, 0, 128, 64, 1);
+  display.drawBitmap(5, 56, notif16x16, 16, 16, 1);
+  display.setTextSize(1);
+  display.setTextColor(WHITE);
+  display.setCursor(20, 22);
+  display.print("You have a new\n   buisness notif.");
+  if (Button3.wasPressed())
+  {
+    mode = 0;
+    inMenu = 0;
+  }
+  display.display();
+}
+void notifLocation()
+{
+  display.clearDisplay();
+  display.drawRect(0, 0, 128, 64, 1);
+  display.drawBitmap(5, 56, notif16x16, 16, 16, 1);
+  display.setTextSize(1);
+  display.setTextColor(WHITE);
+  display.setCursor(20, 22);
+  display.print("You have a new\n   location notif.");
+  if (Button3.wasPressed())
+  {
+    mode = 0;
+    inMenu = 0;
+  }
+  display.display();
+}
+void notifEntertainment()
+{
+  display.clearDisplay();
+  display.drawRect(0, 0, 128, 64, 1);
+  display.drawBitmap(56, 5, notif16x16, 16, 16, 1);
+  display.setTextSize(1);
+  display.setTextColor(WHITE);
+  display.setCursor(20, 22);
+  display.print("You have a new\n       message");
+  if (Button3.wasPressed())
+  {
+    mode = 0;
+    inMenu = 0;
+  }
   display.display();
 }
 
@@ -1052,16 +1287,65 @@ void ancsNotificationSourceCharacteristicValueUpdated(BLECentral& central, BLERe
 
   memcpy(&notification, characteristic.value(), sizeof(notification));
 
-  Serial.print("\tEvent ID: ");
-  Serial.println(notification.eventId);
-  Serial.print("\tEvent Flags: 0x");
-  Serial.println(notification.eventFlags, HEX);
-  Serial.print("\tCategory ID: ");
-  Serial.println(notification.catergoryId);
-  Serial.print("\tCategory Count: ");
-  Serial.println(notification.catergoryCount);
-  Serial.print("\tNotification UID: ");
-  Serial.println(notification.notificationUid);
+  //  Serial.print("\tEvent ID: ");
+  //  Serial.println(notification.eventId);
+  //  Serial.print("\tEvent Flags: 0x");
+  //  Serial.println(notification.eventFlags, HEX);
+  //  Serial.print("\tCategory ID: ");
+  //  Serial.println(notification.catergoryId);
+  //  Serial.print("\tCategory Count: ");
+  //  Serial.println(notification.catergoryCount);
+  //  Serial.print("\tNotification UID: ");
+  //  Serial.println(notification.notificationUid);
+
+  if (notification.catergoryId = 0)
+  {
+    mode = 6;
+  }
+  if (notification.catergoryId = 1)
+  {
+    mode = 7;
+  }
+  if (notification.catergoryId = 2)
+  {
+    mode = 8;
+  }
+  if (notification.catergoryId = 3)
+  {
+    mode = 9;
+  }
+  if (notification.catergoryId = 4)
+  {
+    mode = 10;
+  }
+  if (notification.catergoryId = 5)
+  {
+    mode = 11;
+  }
+  if (notification.catergoryId = 6)
+  {
+    mode = 12;
+  }
+  if (notification.catergoryId = 7)
+  {
+    mode = 13;
+  }
+  if (notification.catergoryId = 8)
+  {
+    mode = 14;
+  }
+  if (notification.catergoryId = 9)
+  {
+    mode = 15;
+  }
+  if (notification.catergoryId = 10)
+  {
+    mode = 16;
+  }
+  if (notification.catergoryId = 11)
+  {
+    mode = 17;
+  }
 }
 
 void setup()
@@ -1080,25 +1364,18 @@ void setup()
 
   rtc.begin();
 
-  // __DATE__ is a C++ preprocessor string with the current date in it.
-  // It will look something like 'Mar  13  2016'.
-  // So we need to pull those values out and convert the month string to a number.
   sscanf(__DATE__, "%s %d %d", s_month, &tday, &tyear);
 
-  // Similarly, __TIME__ will look something like '09:34:17' so get those numbers.
   sscanf(__TIME__, "%d:%d:%d", &thour, &tminute, &tsecond);
 
-  // Find the position of this month's string inside month_names, do a little
-  // pointer subtraction arithmetic to get the offset, and divide the
-  // result by 3 since the month names are 3 chars long.
   tmonth = (strstr(month_names, s_month) - month_names) / 3;
 
-  byte months = tmonth + 1;  // The RTC library expects months to be 1 - 12.
+  byte months = tmonth + 1;
   byte days = tday;
-  byte years = tyear - 2000; // The RTC library expects years to be from 2000.
+  byte years = tyear - 2000;
   byte hours = thour;
   byte minutes = tminute;
-  byte seconds = tsecond + 6; //+6 to compensate for prog. time.
+  byte seconds = tsecond + 6;
 
   rtc.setTime(hours, minutes, seconds);
   rtc.setDate(days, months, years);
@@ -1118,8 +1395,6 @@ void setup()
   drv.begin();
   drv.setMode(DRV2605_MODE_INTTRIG);
   drv.selectLibrary(1);
-
-  bleBondStore.clearData();
 
   blePeripheral.setBondStore(bleBondStore);
 
@@ -1177,12 +1452,13 @@ void loop()
       display.clearDisplay();
       display.display();
       //attachInterrupt(A2, interr1, HIGH);
-      attachInterrupt(B1Pin, interr2, LOW);
+      attachInterrupt(B1Pin, interr1, LOW);
       LowPower.standby();
       display.drawBitmap(0, 0, RWatch_logo, 128, 64, 1);
       display.display();
       detachInterrupt(B1Pin);
       //detachInterrupt(A2);
+      bno.resetInterrupt();
       first_millis = millis();
       inMenu = 0;
       mode = 0;
