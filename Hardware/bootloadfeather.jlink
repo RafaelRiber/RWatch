@@ -1,0 +1,8 @@
+AutoConnect 1
+if swd 
+speed auto
+device ATSAMD21G18
+erase
+loadbin /Users/rafael/Desktop/GitHub/RWatch/Hardware/Reference/Boards/Adafruit-Feather-M0-Basic-Proto-PCB-master/featherm0bootloader_151101.hex
+r
+g
