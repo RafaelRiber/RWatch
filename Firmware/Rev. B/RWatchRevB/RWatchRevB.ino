@@ -30,7 +30,7 @@
 #include <Chrono.h>
 #include <LowPower.h>
 #include <Button.h>
-#include <SparkFunBQ27441.h>
+//#include <SparkFunBQ27441.h>
 #include <StopWatch.h>
 #include <Adafruit_DRV2605.h>
 #include <BLEPeripheral.h>
@@ -414,35 +414,35 @@ void main_screen()
   display.drawFastHLine(0, 48, 128, 1);
 
   //BATT STAT
-  if (lipo.soc() == 100)
-  {
-    display.drawBitmap(5, 52, batt_icon_full16x8, 16, 8, 1);
-  }
-  if (lipo.soc() < 100 && lipo.soc() > 50)
-  {
-    display.drawBitmap(5, 52, batt_icon_high16x8, 16, 8, 1);
-  }
-  if (lipo.soc() < 50 && lipo.soc() > 30)
-  {
-    display.drawBitmap(5, 52, batt_icon_low16x8, 16, 8, 1);
-  }
-  if (lipo.soc() < 30)
-  {
-    display.drawBitmap(5, 52, batt_icon_empty16x8, 16, 8, 1);
-  }
-
-  display.setTextSize(1);
-  display.setTextColor(WHITE);
-  display.setCursor(25, 52);
-  display.print(lipo.soc());
-  display.print("%");
-
-  int pw = lipo.power();
-
-  if (pw > 0)
-  {
-    display.drawBitmap(50, 52, chg_icon8x8, 8, 8, 1);
-  }
+//  if (lipo.soc() == 100)
+//  {
+//    display.drawBitmap(5, 52, batt_icon_full16x8, 16, 8, 1);
+//  }
+//  if (lipo.soc() < 100 && lipo.soc() > 50)
+//  {
+//    display.drawBitmap(5, 52, batt_icon_high16x8, 16, 8, 1);
+//  }
+//  if (lipo.soc() < 50 && lipo.soc() > 30)
+//  {
+//    display.drawBitmap(5, 52, batt_icon_low16x8, 16, 8, 1);
+//  }
+//  if (lipo.soc() < 30)
+//  {
+//    display.drawBitmap(5, 52, batt_icon_empty16x8, 16, 8, 1);
+//  }
+//
+//  display.setTextSize(1);
+//  display.setTextColor(WHITE);
+//  display.setCursor(25, 52);
+//  display.print(lipo.soc());
+//  display.print("%");
+//
+//  int pw = lipo.power();
+//
+//  if (pw > 0)
+//  {
+//    display.drawBitmap(50, 52, chg_icon8x8, 8, 8, 1);
+//  }
 
   display.setTextSize(1);
   display.setTextColor(WHITE);
@@ -995,35 +995,35 @@ void button_buzz()
 void powerStats()
 {
   display.clearDisplay();
-  display.setTextSize(1);
-  display.setTextColor(WHITE);
-  display.setCursor(0, 0);
-  // Now print out those values:
-  display.print("SOC: ");
-  display.print(lipo.soc());
-  display.println("%");
-
-  display.print("Voltage: ");
-  display.print(lipo.voltage());
-  display.println(" mV");
-
-  display.print("Current: ");
-  display.print(lipo.current(AVG));
-  display.println(" mA");
-
-  display.print("Capacity: ");
-  display.print(lipo.capacity(REMAIN));
-  display.print((char)47);
-  display.print(lipo.capacity(FULL));
-  display.println(" mAh");
-
-  display.print("Power: ");
-  display.print(lipo.power());
-  display.println(" mW");
-
-  display.print("Health: ");
-  display.print(lipo.soh());
-  display.print("%");
+//  display.setTextSize(1);
+//  display.setTextColor(WHITE);
+//  display.setCursor(0, 0);
+//  // Now print out those values:
+//  display.print("SOC: ");
+//  display.print(lipo.soc());
+//  display.println("%");
+//
+//  display.print("Voltage: ");
+//  display.print(lipo.voltage());
+//  display.println(" mV");
+//
+//  display.print("Current: ");
+//  display.print(lipo.current(AVG));
+//  display.println(" mA");
+//
+//  display.print("Capacity: ");
+//  display.print(lipo.capacity(REMAIN));
+//  display.print((char)47);
+//  display.print(lipo.capacity(FULL));
+//  display.println(" mAh");
+//
+//  display.print("Power: ");
+//  display.print(lipo.power());
+//  display.println(" mW");
+//
+//  display.print("Health: ");
+//  display.print(lipo.soh());
+//  display.print("%");
 
   display.display();
 }
@@ -1349,7 +1349,7 @@ void ancsNotificationSourceCharacteristicValueUpdated(BLECentral& central, BLERe
 }
 
 void setup()
-{
+{  
   char s_month[5];
   int tmonth, tday, tyear, thour, tminute, tsecond;
   static const char month_names[] = "JanFebMarAprMayJunJulAugSepOctNovDec";
@@ -1388,10 +1388,6 @@ void setup()
   bno.begin();
   bno.setExtCrystalUse(true);
 
-  //BATT SETUP
-  lipo.begin();
-  lipo.setCapacity(BATTERY_CAPACITY);
-
   drv.begin();
   drv.setMode(DRV2605_MODE_INTTRIG);
   drv.selectLibrary(1);
@@ -1419,6 +1415,9 @@ void setup()
 
   // begin initialization
   blePeripheral.begin();
+
+  //lipo.begin();
+  //lipo.setCapacity(500);
 
   display.begin(SSD1306_SWITCHCAPVCC);
   display.clearDisplay();
@@ -1458,7 +1457,6 @@ void loop()
       display.display();
       detachInterrupt(B1Pin);
       //detachInterrupt(A2);
-      bno.resetInterrupt();
       first_millis = millis();
       inMenu = 0;
       mode = 0;
