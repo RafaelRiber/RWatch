@@ -825,46 +825,13 @@ void compass()
 
   imu::Vector<3> compass = bno.getVector(Adafruit_BNO055::VECTOR_MAGNETOMETER);
 
-  int heading = atan2(compass.y(), compass.x()) * (180 / PI); // angle in degrees
+  int heading = atan2(compass.y(), compass.x()) * (180 / PI);
 
   if (heading < 0)
   {
     heading = 360 + heading;
   }
-
-
-  /*
-    CALIB ?
-    //  adafruit_bno055_offsets_t calibData;
-    //
-    //  //Calibration Results:
-    //  //Accelerometer: 65515 65520 13
-    //  //Gyro: 0 0 0
-    //  //Mag: 710 118 65414
-    //  //Accel Radius: 1000
-    //  //Mag Radius: 636
-    //
-    //  calibData.accel_offset_x = 65515;
-    //  calibData.accel_offset_y = 65520;
-    //  calibData.accel_offset_z = 13;
-    //
-    //  calibData.gyro_offset_x = 0;
-    //  calibData.gyro_offset_y = 0;
-    //  calibData.gyro_offset_z = 0;
-    //
-    //  calibData.mag_offset_x = 710;
-    //  calibData.mag_offset_y = 118;
-    //  calibData.mag_offset_z = 65414;
-    //
-    //  calibData.accel_radius = 1000;
-    //
-    //  calibData.mag_radius = 636;
-    //
-    //  if (!bno.isFullyCalibrated())
-    //  {
-    //    bno.setSensorOffsets(calibData);
-    //  }
-  */
+  
   if (heading < 0)
   {
     heading = 360 + heading;
@@ -961,6 +928,7 @@ void accel()
   float gx = gravity.x();
   float gy = gravity.y();
   float gz = gravity.z();
+  
   display.println("Linear acceleration:");
   display.print("X: ");
   display.print(ax);
