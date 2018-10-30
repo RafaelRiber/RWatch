@@ -41,6 +41,10 @@
 
 #define ClickPin    7 //FINAL: D7 //INT2 Double click
 
+//flappy
+#define ANIM_FRAME 1
+#define DELAY_FRAME 6
+
 LSM303 lsm;
 
 StopWatch stopwatch;
@@ -76,7 +80,8 @@ int minhour = 0;
 int time_set_hour;
 int time_set_min;
 
-int timeout = 10000;
+//int timeout = 10000;
+int timeout = 25000;
 int first_millis;
 
 //int accelSens = 1; //1, 2, 4 or 12
@@ -175,6 +180,12 @@ const unsigned char chg_icon8x8[] PROGMEM = {
   0x00, 0x08, 0x10, 0x30, 0x7e, 0x0c, 0x08, 0x10
 };
 
+const unsigned char flappybird_frame_1[] = { 0x03, 0xF0, 0x0C, 0x48, 0x10, 0x84, 0x78, 0x8A, 0x84, 0x8A, 0x82, 0x42, 0x82, 0x3E, 0x44, 0x41, 0x38, 0xBE, 0x20, 0x41, 0x18, 0x3E, 0x07, 0xC0 };
+const unsigned char flappybird_frame_2[] = { 0x03, 0xF0, 0x0C, 0x48, 0x10, 0x84, 0x20, 0x8A, 0x40, 0x8A, 0x40, 0x42, 0x7C, 0x3E, 0x82, 0x41, 0x84, 0xBE, 0x88, 0x41, 0x78, 0x3E, 0x07, 0xC0 };
+const unsigned char bar_bottom[] = { 0xFF, 0xFF, 0xFF, 0x42, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E };
+const unsigned char bar_top[] = { 0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x42, 0xFF, 0xFF, 0xFF };
+
+
 void interr1()
 {}
 
@@ -201,6 +212,8 @@ void menu()
       display.println(" Stopwatch");
       display.println(" Compass");
       display.println(" Accelerometer");
+      display.println(" FB");
+      display.println(" Credits");
       display.display();
       if (Button1.wasPressed())
       {
@@ -219,6 +232,8 @@ void menu()
       display.setTextColor(WHITE);
       display.println(" Compass");
       display.println(" Accelerometer");
+      display.println(" FB");
+      display.println(" Credits");
       display.display();
       if (Button1.wasPressed())
       {
@@ -237,6 +252,8 @@ void menu()
       display.println(" Compass");
       display.setTextColor(WHITE);
       display.println(" Accelerometer");
+      display.println(" FB");
+      display.println(" Credits");
       display.display();
       if (Button1.wasPressed())
       {
@@ -255,10 +272,51 @@ void menu()
       display.setTextColor(BLACK, WHITE);
       display.println(" Accelerometer");
       display.setTextColor(WHITE);
+      display.println(" FB");
+      display.println(" Credits");
       display.display();
       if (Button1.wasPressed())
       {
         mode = 3;
+      }
+      break;
+    case 4: //FB
+      display.clearDisplay();
+      display.drawRect(0, 0, 128, 64, 1);
+      display.setTextSize(1);
+      display.setTextColor(WHITE);
+      display.setCursor(2, 2);
+      display.println(" Main screen");
+      display.println(" Stopwatch");
+      display.println(" Compass");
+      display.println(" Accelerometer");
+      display.setTextColor(BLACK, WHITE);
+      display.println(" FB");
+      display.setTextColor(WHITE);
+      display.println(" Credits");
+      display.display();
+      if (Button1.wasPressed())
+      {
+        mode = 4;
+      }
+      break;
+    case 5: //FB
+      display.clearDisplay();
+      display.drawRect(0, 0, 128, 64, 1);
+      display.setTextSize(1);
+      display.setTextColor(WHITE);
+      display.setCursor(2, 2);
+      display.println(" Main screen");
+      display.println(" Stopwatch");
+      display.println(" Compass");
+      display.println(" Accelerometer");
+      display.println(" FB");
+      display.setTextColor(BLACK, WHITE);
+      display.println(" Credits");
+      display.display();
+      if (Button1.wasPressed())
+      {
+        mode = 5;
       }
       break;
   }
@@ -273,9 +331,9 @@ void menu()
     modeInMenu = modeInMenu - 1;
   }
 
-  if (modeInMenu > 3)
+  if (modeInMenu > 5)
   {
-    modeInMenu = 3;
+    modeInMenu = 5;
   }
 
   if (modeInMenu < 0)
@@ -299,6 +357,11 @@ void show_mode()
       break;
     case 3:
       accel();
+      break;
+    case 4:
+      flappy();
+    case 5:
+      creds();
       break;
   }
 }
@@ -734,6 +797,226 @@ void accel()
   display.println(" G");
   display.display();
   delay(75);
+}
+
+class Chym {
+
+  private:
+    int frameCount;
+    int x;
+    int y;
+    int deltaIde;
+    int delayFrame;
+
+    int jumpCount;
+    int maxJumpCount;
+    int moveSpeed;
+
+    bool _isDead;
+  public:
+    void respawn() {
+      x = 24;
+      y = 20;
+      deltaIde = -1;
+      moveSpeed = 1;
+      jumpCount = 0;
+      _isDead = false;
+    }
+
+    Chym() {
+      frameCount = 0;
+      delayFrame = 0;
+      maxJumpCount = 20;
+      respawn();
+    }
+
+    void render() {
+      if (frameCount < ANIM_FRAME / 2) {
+        display.drawBitmap(x, y, flappybird_frame_1, 16, 12, 1);
+      }
+      else {
+        display.drawBitmap(x, y, flappybird_frame_2, 16, 12, 1);
+      }
+    }
+
+    void update() {
+      delayFrame++;
+      if (delayFrame == DELAY_FRAME) {
+        y += deltaIde * moveSpeed;
+        delayFrame = 0;
+      }
+
+      if (y > 35) {
+        _isDead = true;
+      }
+
+      frameCount++;
+      if (frameCount >= ANIM_FRAME) frameCount = 0;
+    }
+
+    bool isDead() {
+      return _isDead;
+    }
+
+    void die() {
+      _isDead = true;
+    }
+
+    void cancelJump() {
+      jumpCount = 0;
+      flyDown();
+    }
+
+    void flyUp() {
+      if (jumpCount < maxJumpCount) {
+        deltaIde = -1;
+        moveSpeed = 3;
+        jumpCount++;
+      }
+      else {
+        flyDown();
+      }
+    }
+
+    void flyDown() {
+      deltaIde = 1;
+      moveSpeed = 1;
+    }
+
+    int getX() {
+      return x;
+    }
+
+    int getY() {
+      return y;
+    }
+
+};
+
+class Bar {
+
+  private:
+    int x;
+    int y;
+    int delayFrame;
+    int moveSpeed;
+  public:
+    Bar() {
+      delayFrame = 0;
+      x = 0; y = 24;
+      moveSpeed = 2;
+    }
+
+    void setPos(int sx, int sy) {
+      x = sx; y = sy;
+    }
+
+    void render() {
+      display.drawBitmap(x, y - 30, bar_top, 8, 20, 1);
+      display.drawBitmap(x, y + 10, bar_bottom, 8, 20, 1);
+    }
+
+    void update() {
+      delayFrame++;
+      if (delayFrame == DELAY_FRAME) {
+
+        x -= moveSpeed;
+        if (x < -10) x = 95;
+
+        delayFrame = 0;
+      }
+    }
+
+    int hitTest(int tx, int ty) {
+      int hitX = ((tx >= x - 16) && (tx <= x)) ? 1 : 0;
+      int hitY = ((ty <= (y - 10)) || (ty + 12 >= y + 10)) ? 1 : 0;
+      if (hitX != 0) {
+        return hitY;
+      }
+      return 0;
+    }
+
+};
+
+Chym player;
+Bar bar; Bar bar2;
+int gameScore = 0;
+int KNOCK_PIN = 5;
+int LED_PIN = 13;
+boolean clicked = false;
+
+void flappy() {
+  getInput();
+  player.update();
+  bar.update(); bar2.update();
+  drawLCD();
+}
+
+
+void creds() {
+  first_millis = millis();
+  display.clearDisplay();
+  display.drawRect(0, 0, 128, 64, 1);
+  display.setTextSize(1);
+  display.setTextColor(WHITE);
+  display.setCursor(10, 10);
+  display.print("Rafael Riber");
+  display.setCursor(10, 20);
+  display.print("OCT. 2016");
+  display.display();
+  
+}
+void resetGame() {
+  player.respawn();
+  bar.setPos(0, 20);
+  bar2.setPos(50, 30);
+  gameScore = 0;
+}
+
+void getInput() {
+  if (Button2.wasPressed()) { // push down
+    clicked = true;
+  }
+  else {
+    clicked = false;
+  }
+}
+
+void drawLCD() {
+  display.clearDisplay();
+
+  if (!player.isDead()) {
+    int ht1 = bar.hitTest(player.getX(), player.getY());
+    int ht2 = bar2.hitTest(player.getX(), player.getY());
+    int die = ht1 + ht2;
+    if (die == 1) {
+      // game over
+      player.die();
+    }
+
+    if (clicked) {
+      player.flyUp();
+    }
+    else {
+      player.cancelJump();
+    }
+    player.render();
+
+    bar.render(); bar2.render();
+  }
+  else {
+    display.setCursor(0, 0);
+    display.setTextSize(2);
+    display.setTextColor(WHITE);
+    display.println("   Game");
+    display.println("   Over");
+    display.println(" Press to");
+    display.println("  Replay");
+    if (clicked) {
+      resetGame();
+    }
+  }
+  display.display();
 }
 
 void setup()

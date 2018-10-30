@@ -18,6 +18,16 @@
   SOFTWARE.
 **/
 
+/*
+Free sercom
+Pin  Arduino 'Pin' SERCOM    SERCOM alt
+-----------------------------------------
+PA18  D10          SERCOM1.2 SERCOM3.2
+PA16  D11          SERCOM1.0 SERCOM3.0
+PA19  D12          SERCOM1.3 SERCOM3.3
+PA17  D13          SERCOM1.1 SERCOM3.1
+ */
+
 #include <SPI.h>
 #include <Wire.h>
 #include <Adafruit_Sensor.h>
@@ -49,10 +59,11 @@
 #define BNO_INT_PIN A2 //FINAL: ??, PROTO: A2
 
 //flappy
-#define ANIM_FRAME 120
+#define ANIM_FRAME 50
 #define DELAY_FRAME 1
 
 Adafruit_SSD1306 display(OLED_MOSI, OLED_CLK, OLED_DC, OLED_RESET, OLED_CS);
+
 Adafruit_DRV2605 drv;
 NAxisMotion bno;
 Adafruit_BMP280 bmp;
@@ -1424,7 +1435,7 @@ class Chym {
     void flyUp() {
       if (jumpCount < maxJumpCount) {
         deltaIde = -1;
-        moveSpeed = 3;
+        moveSpeed = 4;
         jumpCount++;
       }
       else {
